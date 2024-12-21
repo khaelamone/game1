@@ -5,21 +5,27 @@ const scoreBoard = document.getElementById('score');
 canvas.width = 320;
 canvas.height = 480;
 
-// Menambahkan background hutan
+// Menggunakan gambar untuk burung, pipa, dan latar belakang
+const birdImage = new Image();
 const backgroundImage = new Image();
-backgroundImage.src = 'forest.png';
+const pipeImageTop = new Image();
+const pipeImageBottom = new Image();
+
+birdImage.src = 'images/bird.png';
+backgroundImage.src = 'images/forest.png';
+pipeImageTop.src = 'images/pipe-top.png';
+pipeImageBottom.src = 'images/pipe-bottom.png';
 
 let bird = {
     x: 50,
     y: 150,
-    width: 20,
-    height: 20,
+    width: 34,
+    height: 24,
     gravity: 0.6,
     lift: -15,
     velocity: 0,
     draw: function() {
-        ctx.fillStyle = '#ffcc00';
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.drawImage(birdImage, this.x, this.y, this.width, this.height);
     },
     update: function() {
         this.velocity += this.gravity;
@@ -50,7 +56,6 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// Fungsi untuk membuat pipa baru
 function createPipe() {
     let pipeHeight = Math.floor(Math.random() * (canvas.height - pipeGap));
     pipes.push({
@@ -61,7 +66,6 @@ function createPipe() {
     });
 }
 
-// Mengupdate posisi pipa
 function updatePipes() {
     for (let i = pipes.length - 1; i >= 0; i--) {
         let pipe = pipes[i];
@@ -80,23 +84,20 @@ function updatePipes() {
     }
 }
 
-// Menarik untuk menggambar pipa
 function drawPipes() {
     for (let pipe of pipes) {
-        ctx.fillStyle = '#00cc66';
-        ctx.fillRect(pipe.x, 0, pipe.width, pipe.y); // Top pipe
-        ctx.fillRect(pipe.x, pipe.y + pipe.height, pipe.width, canvas.height - (pipe.y + pipe.height)); // Bottom pipe
+        // Menggambar pipa atas dan bawah menggunakan gambar
+        ctx.drawImage(pipeImageTop, pipe.x, 0, pipe.width, pipe.y);
+        ctx.drawImage(pipeImageBottom, pipe.x, pipe.y + pipe.height, pipe.width, canvas.height - (pipe.y + pipe.height));
     }
 }
 
-// Menangani game over
 function gameOver() {
     cancelAnimationFrame(animationFrame);
     alert("Game Over! Final Score: " + score);
     resetGame();
 }
 
-// Mengatur ulang permainan
 function resetGame() {
     bird.y = 150;
     bird.velocity = 0;
@@ -105,19 +106,17 @@ function resetGame() {
     scoreBoard.textContent = "Score: " + score;
 }
 
-// Mengupdate posisi burung dan pipa
 function update() {
     bird.update();
     updatePipes();
     scoreBoard.textContent = "Score: " + score;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height); // Menampilkan background hutan
     bird.draw();
     drawPipes();
 }
 
-// Menggambar loop permainan
 function gameLoop() {
     update();
     if (Math.random() < 0.02) {
@@ -127,5 +126,11 @@ function gameLoop() {
 }
 
 backgroundImage.onload = function() {
-    gameLoop();
+    birdImage.onload = function() {
+        pipeImageTop.onload = function() {
+            pipeImageBottom.onload = function() {
+                gameLoop();
+            }
+        }
+    }
 };
