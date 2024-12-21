@@ -1,97 +1,102 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-let bird = {
-    x: 50,
-    y: 150,
-    width: 20,
-    height: 20,
-    gravity: 0.6,
-    lift: -15,
-    velocity: 0,
-    image: new Image()
-};
-
+// Variabel game
+let bird = { x: 50, y: 300, width: 20, height: 20, dy: 0, gravity: 0.5, jump: -10 };
 let pipes = [];
-let frame = 0;
+let pipeGap = 150;
+let pipeWidth = 50;
+let pipeSpeed = 2;
 let score = 0;
+let gameOver = false;
 
-bird.image.src = 'assets/bird.png'; // Ganti dengan path gambar burung
-
-function drawBird() {
-    ctx.drawImage(bird.image, bird.x, bird.y, bird.width, bird.height);
-}
-
-function drawPipes() {
-    let pipeImage = new Image();
-    pipeImage.src = 'assets/pipe.png'; // Ganti dengan path gambar pipa
-    pipes.forEach(pipe => {
-        ctx.drawImage(pipeImage, pipe.x, 0, pipe.width, pipe.top);
-        ctx.drawImage(pipeImage, pipe.x, canvas.height - pipe.bottom, pipe.width, pipe.bottom);
-    });
-}
-
-function updatePipes() {
-    if (frame % 75 === 0) {
-        let top = Math.random() * (canvas.height / 2);
-        let bottom = Math.random() * (canvas.height / 2);
-        pipes.push({ x: canvas.width, top: top, bottom: bottom, width: 20 });
-    }
-    pipes.forEach(pipe => {
-        pipe.x -= 2;
-        if (pipe.x + pipe.width < 0) {
-            pipes.shift();
-            score++;
-            document.getElementById('score').innerText = score; // Update score display
-        }
-    });
-}
-
-function checkCollision() {
-    for (let pipe of pipes) {
-        if (bird.x < pipe.x + pipe.width && bird.x + bird.width > pipe.x) {
-            if (bird.y < pipe.top || bird.y + bird.height > canvas.height - pipe.bottom) {
-                resetGame();
-            }
-        }
-    }
-}
-
-function resetGame() {
-    bird.y = 150;
-    bird.velocity = 0;
-    pipes = [];
-    score = 0;
-    document.getElementById('score').innerText = score; // Reset score display
-}
-
-function update() {
-    bird.velocity += bird.gravity;
-    bird.y += bird.velocity;
-
-    if (bird.y + bird.height >= canvas.height) {
-        resetGame();
-    }
-
-    updatePipes();
-    checkCollision();
-}
-
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBird();
-    drawPipes();
-}
-
-function gameLoop() {
-    update();
-    draw();
-    frame++;
-    requestAnimationFrame(gameLoop);
-}
-
+// Tambahkan event listener untuk lompatan
 document.addEventListener('keydown', () => {
-    bird.velocity = bird.lift;
+  if (!gameOver) bird.dy = bird.jump;
 });
 
+// Fungsi untuk membuat pipa baru
+function createPipe() {
+  let pipeHeight = Math.random() * (canvas.height - pipeGap - 50) + 50;
+  pipes.push({ x: canvas.width, top: pipeHeight, bottom: pipeHeight + pipeGap });
+}
+
+// Update posisi burung dan pipa
+function update() {
+  if (gameOver) return;
+
+  // Update burung
+  bird.dy += bird.gravity;
+  bird.y += bird.dy;
+
+  // Update pipa
+  for (let i = 0; i < pipes.length; i++) {
+    pipes[i].x -= pipeSpeed;
+
+    // Hapus pipa yang keluar layar
+    if (pipes[i].x + pipeWidth < 0) {
+      pipes.splice(i, 1);
+      score++;
+    }
+
+    // Deteksi tabrakan
+    if (
+      bird.x < pipes[i].x + pipeWidth &&
+      bird.x + bird.width > pipes[i].x &&
+      (bird.y < pipes[i].top || bird.y + bird.height > pipes[i].bottom)
+    ) {
+      gameOver = true;
+    }
+  }
+
+  // Tambahkan pipa baru
+  if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 300) {
+    createPipe();
+  }
+
+  // Deteksi jika burung keluar layar
+  if (bird.y < 0 || bird.y + bird.height > canvas.height) {
+    gameOver = true;
+  }
+}
+
+// Gambar elemen game
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Gambar burung
+  ctx.fillStyle = 'yellow';
+  ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+
+  // Gambar pipa
+  ctx.fillStyle = 'green';
+  for (let i = 0; i < pipes.length; i++) {
+    ctx.fillRect(pipes[i].x, 0, pipeWidth, pipes[i].top);
+    ctx.fillRect(pipes[i].x, pipes[i].bottom, pipeWidth, canvas.height - pipes[i].bottom);
+  }
+
+  // Gambar skor
+  ctx.fillStyle = 'black';
+  ctx.font = '20px Arial';
+  ctx.fillText(`Score: ${score}`, 10, 30);
+
+  // Pesan Game Over
+  if (gameOver) {
+    ctx.fillStyle = 'red';
+    ctx.font = '40px Arial';
+    ctx.fillText('Game Over!', canvas.width / 2 - 100, canvas.height / 2);
+  }
+}
+
+// Loop game
+function gameLoop() {
+  update();
+  draw();
+
+  if (!gameOver) {
+    requestAnimationFrame(gameLoop);
+  }
+}
+
+createPipe();
 gameLoop();
